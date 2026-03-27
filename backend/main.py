@@ -4,6 +4,12 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from database import engine, get_db
 import db_models
+from fastapi import HTTPException
+# We import the ML pipeline logic that your teammate is writing
+import ingest_and_train
+from auth_utils import verify_token
+
+
 
 # Initialize the main FastAPI application instance
 app = FastAPI(title="AI-LMS Backend API")
@@ -30,3 +36,21 @@ def startup():
 def get_students(db: Session = Depends(get_db)):
     # Returns all student records from the database
     return db.query(db_models.Student).all()
+
+@app.post("/sync")
+async def sync_lms_data(db: Session = Depends(get_db)):
+    # Triggers the Machine Learning pipeline to fetch external data and re-evaluate risk
+    try:
+        await ingest_and_train.run_pipeline(db)
+        return {"status": "success", "message": "LMS sync complete. Models retrained."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/sync")
+async def sync_lms_data(db: Session = Depends(get_db), auth: bool = Depends(verify_token)):
+    # Triggers the Machine Learning pipeline, protected by a simple simulated Bearer token
+    try:
+        await ingest_and_train.run_pipeline(db)
+        return {"status": "success", "message": "LMS sync complete. Models retrained."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
