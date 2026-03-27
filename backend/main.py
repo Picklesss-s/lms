@@ -7,6 +7,10 @@ import db_models
 from fastapi import HTTPException
 # We import the ML pipeline logic that your teammate is writing
 import ingest_and_train
+from auth_utils import verify_token
+
+
+
 # Initialize the main FastAPI application instance
 app = FastAPI(title="AI-LMS Backend API")
 
@@ -30,14 +34,20 @@ def startup():
 
 @app.get("/students")
 def get_students(db: Session = Depends(get_db)):
-    # Returns all student records from the database
-    return db.query(db_models.Student).all()
-
+    # Safely retrieves student records, returning a 500 error if the database fails
+    try:
+        students = db.query(db_models.Student).all()
+        return students
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch students")
+    
 @app.post("/sync")
-async def sync_lms_data(db: Session = Depends(get_db)):
-    # Triggers the Machine Learning pipeline to fetch external data and re-evaluate risk
+async def sync_lms_data(db: Session = Depends(get_db), auth: bool = Depends(verify_token)):
+    # Triggers the Machine Learning pipeline, protected by a simple simulated Bearer token
     try:
         await ingest_and_train.run_pipeline(db)
         return {"status": "success", "message": "LMS sync complete. Models retrained."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
