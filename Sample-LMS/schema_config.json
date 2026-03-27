@@ -1,0 +1,254 @@
+{
+  "lms_name": "Sample LMS",
+  "version": "1.0",
+  "endpoints": [
+    {
+      "name": "quizzes",
+      "table_name": "quiz_attempts",
+      "path": "/students/{student_id}/quizzes",
+      "description": "Student quiz attempts and scores",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "quiz_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "quizzes.id"
+        },
+        {
+          "name": "score",
+          "type": "Float",
+          "min": 0,
+          "max": 100,
+          "required": true
+        },
+        {
+          "name": "attempt_date",
+          "type": "DateTime",
+          "required": true
+        }
+      ],
+      "joins": [
+        {
+          "target_table": "quizzes",
+          "on_field": "quiz_id",
+          "target_key": "id",
+          "fields": [
+            {
+              "name": "quiz_title",
+              "source": "title",
+              "type": "String"
+            },
+            {
+              "name": "max_score",
+              "source": "max_score",
+              "type": "Integer"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "attendance",
+      "table_name": "attendance",
+      "path": "/students/{student_id}/attendance",
+      "description": "Daily attendance records",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "date",
+          "type": "Date",
+          "required": true
+        },
+        {
+          "name": "duration_minutes",
+          "type": "Integer",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "interactions",
+      "table_name": "interactions",
+      "path": "/students/{student_id}/interactions",
+      "description": "Resource interaction logs",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "resource_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "resources.id"
+        },
+        {
+          "name": "timestamp",
+          "type": "DateTime",
+          "required": true
+        }
+      ],
+      "joins": [
+        {
+          "target_table": "resources",
+          "on_field": "resource_id",
+          "target_key": "id",
+          "fields": [
+            {
+              "name": "resource_title",
+              "source": "title",
+              "type": "String"
+            },
+            {
+              "name": "resource_type",
+              "source": "type",
+              "type": "String"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "resource_logs",
+      "table_name": "resource_logs",
+      "path": "/students/{student_id}/resource_logs",
+      "description": "Detailed resource engagement logs",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "resource_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "resources.id"
+        },
+        {
+          "name": "duration_seconds",
+          "type": "Integer",
+          "required": true
+        },
+        {
+          "name": "scroll_engagement_score",
+          "type": "Float",
+          "required": true
+        },
+        {
+          "name": "is_afk",
+          "type": "Boolean",
+          "required": true
+        },
+        {
+          "name": "timestamp",
+          "type": "DateTime",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "forum_posts",
+      "table_name": "forum_posts",
+      "path": "/students/{student_id}/forum_posts",
+      "description": "Student forum participation",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "post_content",
+          "type": "String",
+          "required": true
+        },
+        {
+          "name": "likes_count",
+          "type": "Integer",
+          "required": false
+        },
+        {
+          "name": "created_at",
+          "type": "DateTime",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "test_discipline",
+      "table_name": "custom_test_discipline",
+      "path": "/students/{student_id}/test_discipline",
+      "description": "Student Discipline Score",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Integer",
+          "primary_key": true,
+          "auto_increment": true
+        },
+        {
+          "name": "student_id",
+          "type": "Integer",
+          "required": true,
+          "foreign_key": "students.id"
+        },
+        {
+          "name": "value",
+          "type": "Float",
+          "required": true
+        },
+        {
+          "name": "date",
+          "type": "DateTime",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample LMS - Admin Panel</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div id="app" class="container mx-auto p-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Sample LMS - Admin</h1>
+                <p class="text-gray-500">Manage students and their raw activity data</p>
+            </div>
+            <button @click="openCreateModal" class="bg-blue-600 text-white px-4 py-2 rounded-2xl hover:bg-blue-700">
+                + New Student
+            </button>
+        </header>
+
+        <!-- Student List -->
+        <div class="bg-white rounded-2xl shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="student in students" :key="student.id" class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{{ student.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ student.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button @click="editStudent(student)" class="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
+                            <button @click="manageData(student)" class="text-green-600 hover:text-green-900 mr-4">Manage Data</button>
+                            <button @click="deleteStudent(student)" class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Create/Edit Student Modal -->
+        <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6">
+                <h2 class="text-xl font-bold mb-4">{{ editingStudent ? 'Edit Student' : 'New Student' }}</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700">Name</label>
+                    <input v-model="studentForm.name" type="text" class="mt-1 block w-full rounded-2xl border-gray-300 shadow-sm p-2 border">
+                </div>
+
+                <div v-if="!editingStudent" class="mb-4 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                     <h3 class="font-bold text-sm mb-2 text-gray-700">Auto-Generate Data</h3>
+                     <p class="text-xs text-gray-500 mb-2">Create a student with pre-filled random logs (quizzes, clicks, resource usage, scroll behavior).</p>
+                     <button @click="generateRandomData" :disabled="isGenerating" class="w-full bg-purple-600 text-white py-2 rounded text-sm hover:bg-purple-700 disabled:opacity-50">
+                        {{ isGenerating ? 'Generating...' : '✨ Generate Random Student' }}
+                     </button>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button @click="closeModal" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button @click="saveStudent" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Data Modal -->
+        <div v-if="selectedStudent" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl max-w-5xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Data for: {{ selectedStudent.name }}</h2>
+                    <button @click="selectedStudent = null" class="text-gray-500 hover:text-gray-700">Close</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Quizzes -->
+                    <div class="border rounded p-4 bg-white shadow-sm">
+                        <h3 class="font-bold mb-2 text-gray-700">Quiz Attempts</h3>
+                        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                            <div v-for="q in studentData.quizzes" class="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                <div class="font-medium text-gray-900">{{ q.quiz_title }}</div>
+                                <div class="text-gray-500 text-xs">Score: {{ q.score }}/{{ q.max_score }}</div>
+                                <div class="text-xs text-gray-400">{{ formatDate(q.attempt_date) }}</div>
+                            </div>
+                        </div>
+                        <div class="border-t pt-2">
+                            <select v-model="forms.quiz.id" class="w-full mb-2 p-1 border text-sm rounded">
+                                <option v-for="q in resources.quizzes" :value="q.id">{{ q.title }}</option>
+                            </select>
+                            <input v-model="forms.quiz.score" type="number" placeholder="Score" class="w-full mb-2 p-1 border text-sm rounded">
+                            <button @click="addQuiz" class="w-full bg-blue-100 text-blue-700 py-1 text-sm rounded hover:bg-blue-200">Add Attempt</button>
+                        </div>
+                    </div>
+
+                    <!-- Attendance -->
+                    <div class="border rounded p-4 bg-white shadow-sm">
+                        <h3 class="font-bold mb-2 text-gray-700">Attendance</h3>
+                        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                            <div v-for="a in studentData.attendance" class="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                <div class="font-medium text-gray-900">{{ a.date }}</div>
+                                <div class="text-gray-500 text-xs">{{ a.duration_minutes }} mins</div>
+                            </div>
+                        </div>
+                        <div class="border-t pt-2">
+                            <input v-model="forms.attendance.date" type="date" class="w-full mb-2 p-1 border text-sm rounded">
+                            <input v-model="forms.attendance.duration" type="number" placeholder="Minutes" class="w-full mb-2 p-1 border text-sm rounded">
+                            <button @click="addAttendance" class="w-full bg-green-100 text-green-700 py-1 text-sm rounded hover:bg-green-200">Add Record</button>
+                        </div>
+                    </div>
+
+                    <!-- Interactions (Clicks) -->
+                    <div class="border rounded p-4 bg-white shadow-sm">
+                        <h3 class="font-bold mb-2 text-gray-700">Resource Clicks</h3>
+                        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                            <div v-for="i in studentData.interactions" class="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                <div class="font-medium text-gray-900 truncate" :title="i.resource_title">{{ i.resource_title }}</div>
+                                <div class="text-xs uppercase bg-gray-200 inline-block px-1 rounded">{{ i.resource_type }}</div>
+                                <div class="text-xs text-gray-400">{{ formatDate(i.timestamp) }}</div>
+                            </div>
+                        </div>
+                        <div class="border-t pt-2">
+                            <select v-model="forms.interaction.resource_id" class="w-full mb-2 p-1 border text-sm rounded">
+                                <option v-for="r in resources.resources" :value="r.id">{{ r.title }} ({{ r.type }})</option>
+                            </select>
+                            <button @click="addInteraction" class="w-full bg-purple-100 text-purple-700 py-1 text-sm rounded hover:bg-purple-200">Add Click</button>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Resource Logs -->
+                    <div class="border rounded p-4 bg-white shadow-sm">
+                        <h3 class="font-bold mb-2 text-gray-700">Detailed Logs (Scroll/Time)</h3>
+                        <div class="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                            <div v-for="l in studentData.resource_logs" class="text-sm bg-gray-50 p-2 rounded border border-gray-100">
+                                <div class="font-medium text-gray-900">Res #{{ l.resource_id }}</div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>{{ l.duration_seconds }}s</span>
+                                    <span :class="l.is_afk ? 'text-red-500' : 'text-green-500'">{{ l.is_afk ? 'AFK' : 'Active' }}</span>
+                                </div>
+                                <div class="text-xs text-gray-400">Scroll: {{ (l.scroll_engagement_score * 100).toFixed(0) }}%</div>
+                            </div>
+                        </div>
+                        <div class="border-t pt-2 space-y-2">
+                            <select v-model="forms.resource_log.resource_id" class="w-full p-1 border text-sm rounded">
+                                <option v-for="r in resources.resources" :value="r.id">{{ r.title }}</option>
+                            </select>
+                            <input v-model="forms.resource_log.duration" type="number" placeholder="Seconds" class="w-full p-1 border text-sm rounded">
+                            <div class="flex items-center gap-2">
+                                <input v-model="forms.resource_log.is_afk" type="checkbox" id="afk">
+                                <label for="afk" class="text-xs">Is AFK?</label>
+                            </div>
+                             <input v-model="forms.resource_log.scroll" type="number" step="0.1" min="0" max="1" placeholder="Scroll Score (0-1)" class="w-full p-1 border text-sm rounded">
+
+                            <button @click="addResourceLog" class="w-full bg-orange-100 text-orange-700 py-1 text-sm rounded hover:bg-orange-200">Add Log</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue
+
+        createApp({
+            setup() {
+                const students = ref([])
+                const showCreateModal = ref(false)
+                const editingStudent = ref(null)
+                const studentForm = ref({ name: '' })
+                const selectedStudent = ref(null)
+                const isGenerating = ref(false)
+
+                const studentData = ref({ quizzes: [], attendance: [], interactions: [], resource_logs: [] })
+                const resources = ref({ quizzes: [], resources: [] })
+
+                const forms = ref({
+                    quiz: { id: 1, score: 80 },
+                    attendance: { date: new Date().toISOString().split('T')[0], duration: 60 },
+                    interaction: { resource_id: 1 },
+                    resource_log: { resource_id: 1, duration: 120, is_afk: false, scroll: 0.8 }
+                })
+
+                async function fetchStudents() {
+                    const res = await fetch('/students')
+                    students.value = await res.json()
+                }
+
+                async function fetchResources() {
+                    const res = await fetch('/resources/meta')
+                    const data = await res.json()
+                    resources.value = data
+                }
+
+                function openCreateModal() {
+                    showCreateModal.value = true
+                    editingStudent.value = null
+                    studentForm.value = { name: '' }
+                }
+
+                function closeModal() {
+                    showCreateModal.value = false
+                    editingStudent.value = null
+                    studentForm.value = { name: '' }
+                }
+
+                async function saveStudent() {
+                    const url = editingStudent.value ? `/students/${editingStudent.value.id}` : '/students'
+                    const method = editingStudent.value ? 'PUT' : 'POST'
+
+                    const res = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(studentForm.value)
+                    })
+
+                    closeModal()
+                    fetchStudents()
+                }
+
+                function editStudent(student) {
+                    editingStudent.value = student
+                    studentForm.value = { name: student.name }
+                    showCreateModal.value = true
+                }
+
+                async function deleteStudent(student) {
+                    if(!confirm('Are you sure?')) return
+                    await fetch(`/students/${student.id}`, { method: 'DELETE' })
+                    fetchStudents()
+                }
+
+                async function manageData(student) {
+                    selectedStudent.value = student
+                    // Fetch data
+                    const [q, a, i, l] = await Promise.all([
+                        fetch(`/students/${student.id}/quizzes`).then(r => r.json()),
+                        fetch(`/students/${student.id}/attendance`).then(r => r.json()),
+                        fetch(`/students/${student.id}/interactions`).then(r => r.json()),
+                        fetch(`/students/${student.id}/resource_logs`).then(r => r.json())
+                    ])
+                    studentData.value = { quizzes: q, attendance: a, interactions: i, resource_logs: l }
+                }
+
+                // Random Data Generator
+                async function generateRandomData() {
+                    if (!studentForm.value.name) {
+                        alert("Please enter a name first")
+                        return
+                    }
+                    isGenerating.value = true
+
+                    try {
+                        // 1. Create Student
+                        const res = await fetch('/students', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: studentForm.value.name })
+                        })
+                        const newStudent = await res.json()
+                        const id = newStudent.id
+
+                        // 2. Generate Data
+                        const promises = []
+
+                        // Quizzes (Random 3-5)
+                        const numQuizzes = 3 + Math.floor(Math.random() * 3)
+                        for(let i=0; i<numQuizzes; i++) {
+                             const qId = 1 + Math.floor(Math.random() * 3) // Assume 3 quizzes exist
+                             const score = 40 + Math.random() * 60
+                             promises.push(fetch(`/students/${id}/quizzes`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ quiz_id: qId, score: score, attempt_date: new Date().toISOString() })
+                             }))
+                        }
+
+                        // Attendance (Random 5-10)
+                        const numAtt = 5 + Math.floor(Math.random() * 5)
+                        for(let i=0; i<numAtt; i++) {
+                             promises.push(fetch(`/students/${id}/attendance`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ date: new Date().toISOString().split('T')[0], duration_minutes: 30 + Math.floor(Math.random() * 60) })
+                             }))
+                        }
+
+                        // Detailed Logs (Random 10-20)
+                        const numLogs = 10 + Math.floor(Math.random() * 10)
+                        for(let i=0; i<numLogs; i++) {
+                             const rId = 1 + Math.floor(Math.random() * 5) // Assume 5 resources
+                             const duration = 10 + Math.floor(Math.random() * 600)
+                             const isAfk = Math.random() > 0.8
+                             const scroll = isAfk ? 0.1 : (0.5 + Math.random() * 0.5)
+
+                             promises.push(fetch(`/students/${id}/resource_logs`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ resource_id: rId, duration_seconds: duration, is_afk: isAfk, scroll_engagement_score: scroll, timestamp: new Date().toISOString() })
+                             }))
+
+                             // Also add simple interaction
+                             promises.push(fetch(`/students/${id}/interactions`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ resource_id: rId, timestamp: new Date().toISOString() })
+                             }))
+                        }
+
+                        await Promise.all(promises)
+
+                        closeModal()
+                        fetchStudents()
+                    } catch(e) {
+                        console.error(e)
+                        alert("Error generating data")
+                    } finally {
+                        isGenerating.value = false
+                    }
+                }
+
+                async function addQuiz() {
+                    await fetch(`/students/${selectedStudent.value.id}/quizzes`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            quiz_id: forms.value.quiz.id,
+                            score: forms.value.quiz.score,
+                            attempt_date: new Date().toISOString()
+                        })
+                    })
+                    manageData(selectedStudent.value)
+                }
+
+                async function addAttendance() {
+                    await fetch(`/students/${selectedStudent.value.id}/attendance`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            date: forms.value.attendance.date,
+                            duration_minutes: forms.value.attendance.duration
+                        })
+                    })
+                    manageData(selectedStudent.value)
+                }
+
+                async function addInteraction() {
+                    await fetch(`/students/${selectedStudent.value.id}/interactions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            resource_id: forms.value.interaction.resource_id,
+                            timestamp: new Date().toISOString()
+                        })
+                    })
+                    manageData(selectedStudent.value)
+                }
+
+                async function addResourceLog() {
+                    await fetch(`/students/${selectedStudent.value.id}/resource_logs`, {
+                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            resource_id: forms.value.resource_log.resource_id,
+                            duration_seconds: forms.value.resource_log.duration,
+                            is_afk: forms.value.resource_log.is_afk,
+                            scroll_engagement_score: forms.value.resource_log.scroll,
+                            timestamp: new Date().toISOString()
+                        })
+                    })
+                    manageData(selectedStudent.value)
+                }
+
+                function formatDate(dateStr) {
+                    return new Date(dateStr).toLocaleDateString() + ' ' + new Date(dateStr).toLocaleTimeString()
+                }
+
+                onMounted(() => {
+                    fetchStudents()
+                    fetchResources()
+                })
+
+                return {
+                    students, showCreateModal, editingStudent, studentForm, selectedStudent,
+                    studentData, resources, forms, isGenerating,
+                    openCreateModal, closeModal, saveStudent, editStudent, deleteStudent, manageData,
+                    addQuiz, addAttendance, addInteraction, addResourceLog, generateRandomData, formatDate
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
