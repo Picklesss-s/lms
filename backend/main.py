@@ -36,15 +36,6 @@ def startup():
 def get_students(db: Session = Depends(get_db)):
     # Returns all student records from the database
     return db.query(db_models.Student).all()
-
-@app.post("/sync")
-async def sync_lms_data(db: Session = Depends(get_db)):
-    # Triggers the Machine Learning pipeline to fetch external data and re-evaluate risk
-    try:
-        await ingest_and_train.run_pipeline(db)
-        return {"status": "success", "message": "LMS sync complete. Models retrained."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/sync")
 async def sync_lms_data(db: Session = Depends(get_db), auth: bool = Depends(verify_token)):
