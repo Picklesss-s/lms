@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample-LMS Schema Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .endpoint-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .endpoint-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+            transition: all 0.3s;
+        }
+
+        .endpoint-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .endpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .endpoint-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #666;
+            background: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+
+        .endpoint-description {
+            color: #777;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .field-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .field-item {
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .field-name {
+            font-weight: bold;
+            color: #333;
+            min-width: 150px;
+        }
+
+        .field-type {
+            color: #667eea;
+            font-family: 'Courier New', monospace;
+        }
+
+        .field-badges {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e0e0;
+            color: #555;
+        }
+
+        .badge.primary { background: #ffd700; color: #333; }
+        .badge.required { background: #ff6b6b; color: white; }
+        .badge.fk { background: #4ecdc4; color: white; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ee5a52;
+        }
+
+        .btn-success {
+            background: #51cf66;
+            color: white;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .info-box {
+            background: #e7f5ff;
+            border-left: 4px solid #339af0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #1971c2;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .info-box p {
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Sample-LMS Schema Configuration</h1>
+            <p>Manage your mock LMS endpoints and data structures</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>ℹ️ About This Interface</h3>
+                <p>
+                    This admin panel allows you to configure the Sample-LMS schema dynamically.
+                    Add, edit, or remove endpoints to simulate different LMS systems (Canvas, Moodle, Blackboard, etc.).
+                    Changes will take effect after restarting the server.
+                </p>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Configured Endpoints</div>
+                <div id="endpoints-container" class="loading">
+                    Loading schema configuration...
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" onclick="exportSchema()">
+                    📥 Export Schema
+                </button>
+                <button class="btn btn-success" onclick="showAddEndpointForm()">
+                    ➕ Add New Endpoint
+                </button>
+                <button class="btn btn-primary" onclick="location.href='/docs'">
+                    📚 API Documentation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let schemaData = null;
+
+        // Load schema on page load
+        window.addEventListener('DOMContentLoaded', loadSchema);
+
+        async function loadSchema() {
+            try {
+                const response = await fetch('/admin/schema');
+                schemaData = await response.json();
+                renderEndpoints();
+            } catch (error) {
+                document.getElementById('endpoints-container').innerHTML =
+                    '<p style="color: red;">Error loading schema: ' + error.message + '</p>';
+            }
+        }
+
+        function renderEndpoints() {
+            const container = document.getElementById('endpoints-container');
+
+            if (!schemaData || !schemaData.endpoints || schemaData.endpoints.length === 0) {
+                container.innerHTML = '<p>No endpoints configured</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            container.className = 'endpoint-list';
+
+            schemaData.endpoints.forEach(endpoint => {
+                const card = createEndpointCard(endpoint);
+                container.appendChild(card);
+            });
+        }
+
+        function createEndpointCard(endpoint) {
+            const card = document.createElement('div');
+            card.className = 'endpoint-card';
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'endpoint-header';
+            header.innerHTML = `
+                <div>
+                    <div class="endpoint-name">${endpoint.name}</div>
+                    <div class="endpoint-path">${endpoint.path}</div>
+                    ${endpoint.description ? `<div class="endpoint-description">${endpoint.description}</div>` : ''}
+                </div>
+            `;
+            card.appendChild(header);
+
+            // Fields
+            const fieldList = document.createElement('div');
+            fieldList.className = 'field-list';
+
+            endpoint.fields.forEach(field => {
+                const fieldItem = document.createElement('div');
+                fieldItem.className = 'field-item';
+
+                let badges = '';
+                if (field.primary_key) badges += '<span class="badge primary">Primary Key</span>';
+                if (field.required) badges += '<span class="badge required">Required</span>';
+                if (field.foreign_key) badges += '<span class="badge fk">FK</span>';
+
+                fieldItem.innerHTML = `
+                    <span class="field-name">${field.name}</span>
+                    <span class="field-type">${field.type}</span>
+                    <div class="field-badges">${badges}</div>
+                `;
+                fieldList.appendChild(fieldItem);
+            });
+            card.appendChild(fieldList);
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            actions.innerHTML = `
+                <button class="btn btn-primary" onclick="viewEndpointDetails('${endpoint.name}')">
+                    👁️ View Details
+                </button>
+                <button class="btn btn-danger" onclick="deleteEndpoint('${endpoint.name}')">
+                    🗑️ Delete
+                </button>
+            `;
+            card.appendChild(actions);
+
+            return card;
+        }
+
+        function viewEndpointDetails(endpointName) {
+            window.open('/docs#/'+endpointName, '_blank');
+        }
+
+        async function deleteEndpoint(endpointName) {
+            if (!confirm(`Are you sure you want to delete endpoint "${endpointName}"?\n\nThis will require a server restart to take effect.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/schema/endpoints/${endpointName}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Endpoint deleted! Please restart the server to apply changes.');
+                    loadSchema();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.detail);
+                }
+            } catch (error) {
+                alert('Error deleting endpoint: ' + error.message);
+            }
+        }
+
+        function exportSchema() {
+            const dataStr = JSON.stringify(schemaData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'schema_config.json';
+            link.click();
+        }
+
+        function showAddEndpointForm() {
+            alert('Add Endpoint feature coming soon!\n\nFor now, you can:\n1. Edit schema_config.json directly\n2. Use the API: POST /admin/schema/endpoints\n3. Check /docs for the schema');
+        }
+    </script>
+</body>
+</html>
