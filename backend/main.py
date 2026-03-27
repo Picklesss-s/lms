@@ -7,6 +7,10 @@ import db_models
 from fastapi import HTTPException
 # We import the ML pipeline logic that your teammate is writing
 import ingest_and_train
+from auth_utils import verify_token
+
+
+
 # Initialize the main FastAPI application instance
 app = FastAPI(title="AI-LMS Backend API")
 
@@ -41,3 +45,4 @@ async def sync_lms_data(db: Session = Depends(get_db), auth: bool = Depends(veri
         return {"status": "success", "message": "LMS sync complete. Models retrained."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
