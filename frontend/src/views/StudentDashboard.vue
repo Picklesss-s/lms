@@ -2,6 +2,10 @@
   <div class="max-w-6xl mx-auto p-6 mt-10">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800">LMS Dashboard</h1>
+      <button @click="handleSync" :disabled="isSyncing"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded shadow disabled:opacity-50">
+        {{ isSyncing ? 'Syncing with LMS...' : 'Sync LMS Data' }}
+      </button>
     </div>
 
     <div v-if="studentStore.loading" class="text-center py-10">
@@ -25,13 +29,28 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useStudentStore } from '../stores/studentStore'
+import { api } from '../services/api'
 
-// Initializes the student store and fetches data on mount
+// Initializes the student store and manages the syncing state
 const studentStore = useStudentStore()
+const isSyncing = ref(false)
 
 onMounted(() => {
   studentStore.fetchStudents()
 })
+
+// Triggers the backend sync and refreshes the student list
+async function handleSync() {
+  isSyncing.value = true
+  try {
+    await api.syncLMSData()
+    await studentStore.fetchStudents()
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isSyncing.value = false
+  }
+}
 </script>
