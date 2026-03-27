@@ -7,10 +7,6 @@ import db_models
 from fastapi import HTTPException
 # We import the ML pipeline logic that your teammate is writing
 import ingest_and_train
-from auth_utils import verify_token
-
-
-
 # Initialize the main FastAPI application instance
 app = FastAPI(title="AI-LMS Backend API")
 
