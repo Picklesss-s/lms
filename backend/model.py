@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
 # Initializes the main risk prediction machine learning model
 class RiskClassifier:
@@ -18,9 +19,13 @@ class RiskClassifier:
         # Create a hybrid prediction: the Random forest result, OR a hard failure on attendance
         is_at_risk = (ml_prediction == 1) | (features_df['attendance_rate'] < 75)
         return is_at_risk
-
+    
     def train(self, X_train, y_train):
         if X_train.empty:
             return
         self.model.fit(X_train, y_train)
         self.trained = True
+
+        predictions = self.model.predict(X_train)
+        acc = accuracy_score(y_train, predictions)
+        print(f"Random Forest Accuracy (Training): {acc * 100:.2f}%")
