@@ -18,3 +18,9 @@ class RiskClassifier:
         # Create a hybrid prediction: the Random forest result, OR a hard failure on attendance
         is_at_risk = (ml_prediction == 1) | (features_df['attendance_rate'] < 75)
         return is_at_risk
+
+    def train(self, X_train, y_train):
+        if X_train.empty:
+            return
+        self.model.fit(X_train, y_train)
+        self.trained = True
